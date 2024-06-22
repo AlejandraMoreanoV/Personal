@@ -6,7 +6,6 @@ import java.util.List;
 
 public interface IServicioSede {
 
-    boolean verificarValidezSede (Sede s);
     boolean agregarSede (Sede s);
     Sede buscarSedeId (int id);
     Sede buscarSedeCiudad (String ciudad);

@@ -2,76 +2,51 @@ package com.example.demo.servicio;
 
 import com.example.demo.modelo.Sede;
 import com.example.demo.modelo.Usuario;
+import com.example.demo.persistencia.EntitySede;
+import com.example.demo.persistencia.EntityUsuario;
+import com.example.demo.persistencia.IRepositorioUsuario;
+import com.example.demo.persistencia.IUsuarioMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
-public class ServicioUsuario implements IServicioUsuario {
+@RequiredArgsConstructor
+public class ServicioUsuario implements IServicioUsuario, IUsuarioMapper {
 
-    @Autowired
-    IServicioSede iServicioSede;
-
-    public Sede buscarSede (int idSede) {
-        return iServicioSede.buscarSedeId(idSede);
-    }
-
-    @Override
-    public boolean verificarValidezUsuario(Usuario u) {
-        return  u != null
-            && u.getId() > 0
-            && u.getNombre() != null && !u.getNombre().trim().isEmpty()
-            && u.getApellido() != null && !u.getApellido().trim().isEmpty()
-            && u.getMensualidad() > 0
-            && u.getFechaInscripcion() != null;
-    }
+    private final IRepositorioUsuario iRepositorioUsuario;
 
     @Override
     public boolean agregarUsuario(int idSede, Usuario u) {
-        Sede sede = buscarSede(idSede);
-        if (sede != null && verificarValidezUsuario(u) && buscarUsuarioId(idSede, u.getId()) == null ) {
-            sede.getListaUsuarios().add(u);
+        EntityUsuario entityUsuario = toEntityUsuario(idSede, u);
+        if (entityUsuario != null) {
+            iRepositorioUsuario.save(entityUsuario);
             return true;
         }
         return false;
     }
 
-
     @Override
     public Usuario buscarUsuarioId(int idSede, int id) {
-        Sede sede = buscarSede(idSede);
-        if (sede != null) {
-            for (Usuario u : sede.getListaUsuarios()) {
-                if (u.getId() == id) {
-                    return u;
-                }
-            }
-        }
-        return null;
+        Optional<EntityUsuario> entityUsuario = iRepositorioUsuario.findById(id);
+        return toDtoUsuario(entityUsuario.get());
     }
 
     @Override
     public Usuario buscarUsuarioNombre (int idSede, String nombre) {
-        Sede sede = buscarSede(idSede);
-        if (sede != null && nombre != null && !nombre.trim().isEmpty()) {
-            for (Usuario u : sede.getListaUsuarios()) {
-                if (u.getNombre().equals(nombre)) {
-                    return u;
-                }
-            }
-        }
-        return null;
+        Optional<EntityUsuario> entityUsuario = iRepositorioUsuario.findByName(idSede, nombre);
+        return toDtoUsuario(entityUsuario.get());
     }
 
     @Override
     public boolean modificarUsuario (int idSede, Usuario u) {
-        Usuario usuario = buscarUsuarioId(idSede, u.getId());
-        if (usuario != null && verificarValidezUsuario(u)) {
-            usuario.setNombre(u.getNombre());
-            usuario.setApellido(u.getApellido());
-            usuario.setMensualidad(u.getMensualidad());
-            usuario.setFechaInscripcion(u.getFechaInscripcion());
+        EntityUsuario entityUsuario = toEntityUsuario(idSede, u);
+        if (entityUsuario != null) {
+            iRepositorioUsuario.save(entityUsuario);
             return true;
         }
         return false;
@@ -79,9 +54,9 @@ public class ServicioUsuario implements IServicioUsuario {
 
     @Override
     public boolean eliminarUsuario(int idSede, int id) {
-        Usuario usuario = buscarUsuarioId(idSede, id);
-        if (usuario != null) {
-            buscarSede(idSede).getListaUsuarios().remove(usuario);
+        EntityUsuario entityUsuario = iRepositorioUsuario.findById(id).get();
+        if (entityUsuario != null) {
+            iRepositorioUsuario.delete(entityUsuario);
             return true;
         }
         return false;
@@ -89,6 +64,31 @@ public class ServicioUsuario implements IServicioUsuario {
 
     @Override
     public List<Usuario> listarUsuarios(int idSede) {
-        return buscarSede(idSede).getListaUsuarios();
+        List<EntityUsuario> entityList = iRepositorioUsuario.findAll();
+        return toListUsuarios(entityList);
     }
+
+    @Override
+    public Usuario toDtoUsuario(EntityUsuario entityUsuario) {
+        Usuario usuario = new Usuario(entityUsuario.getId(), entityUsuario.getNombre(),
+                entityUsuario.getApellido(), entityUsuario.getFechaInscripcion(), entityUsuario.getMensualidad());
+        return usuario;
+    }
+
+    @Override
+    public EntityUsuario toEntityUsuario(int idSede, Usuario usuario) {
+        EntityUsuario entityUsuario = new EntityUsuario(usuario.getId(), usuario.getNombre(),
+                usuario.getApellido(), usuario.getFechaInscripcion(), usuario.getMensualidad(), idSede, null);
+        return entityUsuario;
+    }
+
+    private List<Usuario> toListUsuarios(List<EntityUsuario> entityList) {
+        List<Usuario> usuarioList = new ArrayList<>();
+        for (EntityUsuario entityUsuario : entityList) {
+            Usuario usuario = toDtoUsuario(entityUsuario);
+            usuarioList.add(usuario);
+        }
+        return usuarioList;
+    }
+
 }
