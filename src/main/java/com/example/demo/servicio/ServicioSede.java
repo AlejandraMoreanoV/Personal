@@ -18,9 +18,19 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
     private final IRepositorioSede iRepositorioSede;
 
     @Override
+    public boolean verificarValidezSede(Sede s) {
+        return  s != null
+                && s.getId() > 0
+                && s.getCiudad() != null && !s.getCiudad().trim().isEmpty()
+                && s.getDireccion() != null && !s.getDireccion().trim().isEmpty()
+                && s.getFechaRegistro() != null
+                && s.getM2() > 0;
+    }
+
+    @Override
     public boolean agregarSede(Sede s) {
-        EntitySede entitySede = toNewEntitySede(s);
-        if (entitySede != null) {
+        if (verificarValidezSede(s)) {
+            EntitySede entitySede = toNewEntitySede(s);
             iRepositorioSede.save(entitySede);
             return true;
         }
@@ -29,20 +39,33 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
 
     @Override
     public Sede buscarSedeId(int id) {
-        Optional<EntitySede> entitySede = iRepositorioSede.findById(id);
-        return toDtoSede(entitySede.get());
+        Integer sedeId = Integer.valueOf(id);
+        Optional<EntitySede> entitySede;
+        if (sedeId != null) {
+            entitySede = iRepositorioSede.findById(sedeId);
+            if (entitySede.isPresent()) {
+                return toDtoSede(entitySede.get());
+            }
+        }
+        return null;
     }
 
     @Override
     public Sede buscarSedeCiudad(String ciudad) {
-        Optional<EntitySede> entitySede = iRepositorioSede.findByCiudad(ciudad);
-        return toDtoSede(entitySede.get());
+        Optional<EntitySede> entitySede;
+        if (ciudad != null && !ciudad.trim().isEmpty()) {
+            entitySede = iRepositorioSede.findByCiudad(ciudad);
+            if (entitySede.isPresent()) {
+                return toDtoSede(entitySede.get());
+            }
+        }
+        return null;
     }
 
     @Override
     public boolean modificarSede(Sede s) {
-        EntitySede entitySede = toEntitySede(s);
-        if (entitySede != null) {
+        if (verificarValidezSede(s) && buscarSedeId(s.getId())!=null) {
+            EntitySede entitySede = toEntitySede(s);
             iRepositorioSede.save(entitySede);
             return true;
         }
@@ -51,9 +74,8 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
 
     @Override
     public boolean eliminarSede(int id) {
-        EntitySede entitySede = iRepositorioSede.findById(id).get();
-        if (entitySede != null) {
-            iRepositorioSede.delete(entitySede);
+        if (buscarSedeId(id) != null) {
+            iRepositorioSede.deleteById(id);
             return true;
         }
         return false;
@@ -85,17 +107,6 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
         return entitySede;
     }
 
-    @Override
-    public List<EntitySede> toListEntitySedes(List<Sede> listSedes) {
-        List<EntitySede> listEntitySedes = new ArrayList<>();
-        for (Sede sede : listSedes) {
-            EntitySede entitySede = new EntitySede(sede.getId(), sede.getCiudad(), sede.getDireccion(),
-                    sede.getFechaRegistro(), sede.getM2(), toListEntityUsuarios(sede.getId(), sede.getListaUsuarios()));
-            listEntitySedes.add(entitySede);
-        }
-        return listEntitySedes;
-    }
-
     public List<Sede> toListSedes(List<EntitySede> listEntitySedes) {
         List<Sede> listSedes = new ArrayList<>();
         for (EntitySede entitySede : listEntitySedes) {
@@ -109,10 +120,12 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
     @Override
     public List<EntityUsuario> toListEntityUsuarios(int idSede, List<Usuario> listUsuarios) {
         List<EntityUsuario> listEntityUsuarios = new ArrayList<>();
-        for (Usuario usuario : listUsuarios) {
-            EntityUsuario entityUsuario = new EntityUsuario(usuario.getId(), usuario.getNombre(), usuario.getApellido(),
-                    usuario.getFechaInscripcion(), usuario.getMensualidad(), idSede, null);
-            listEntityUsuarios.add(entityUsuario);
+        if (listUsuarios != null) {
+            for (Usuario usuario : listUsuarios) {
+                EntityUsuario entityUsuario = new EntityUsuario(usuario.getId(), usuario.getNombre(), usuario.getApellido(),
+                        usuario.getFechaInscripcion(), usuario.getMensualidad(), idSede, null);
+                listEntityUsuarios.add(entityUsuario);
+            }
         }
         return listEntityUsuarios;
     }
@@ -127,4 +140,18 @@ public class ServicioSede implements IServicioSede, ISedeMapper {
         }
         return listUsuarios;
     }
+
+        /*
+    @Override
+    public List<EntitySede> toListEntitySedes(List<Sede> listSedes) {
+        List<EntitySede> listEntitySedes = new ArrayList<>();
+        for (Sede sede : listSedes) {
+            EntitySede entitySede = new EntitySede(sede.getId(), sede.getCiudad(), sede.getDireccion(),
+                    sede.getFechaRegistro(), sede.getM2(), toListEntityUsuarios(sede.getId(), sede.getListaUsuarios()));
+            listEntitySedes.add(entitySede);
+        }
+        return listEntitySedes;
+    }
+     */
+
 }

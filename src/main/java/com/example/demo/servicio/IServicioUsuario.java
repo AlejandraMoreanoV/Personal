@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface IServicioUsuario {
 
+    boolean verificarValidezUsuario(Usuario u);
     boolean agregarUsuario (int idSede, Usuario u);
     Usuario buscarUsuarioId (int idSede, int id);
     Usuario buscarUsuarioNombre (int idSede, String nombre);

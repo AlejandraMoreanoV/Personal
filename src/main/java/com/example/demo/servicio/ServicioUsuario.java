@@ -21,9 +21,21 @@ public class ServicioUsuario implements IServicioUsuario, IUsuarioMapper {
     private final IRepositorioUsuario iRepositorioUsuario;
 
     @Override
+    public boolean verificarValidezUsuario(Usuario u) {
+        return  u != null
+                && u.getId() > 0
+                && u.getNombre() != null && !u.getNombre().trim().isEmpty()
+                && u.getApellido() != null && !u.getApellido().trim().isEmpty()
+                && u.getMensualidad() > 0
+                && u.getFechaInscripcion() != null;
+    }
+
+    @Override
     public boolean agregarUsuario(int idSede, Usuario u) {
-        EntityUsuario entityUsuario = toEntityUsuario(idSede, u);
-        if (entityUsuario != null) {
+        Integer sedeId = Integer.valueOf(idSede);
+        EntityUsuario entityUsuario;
+        if (sedeId!=null && verificarValidezUsuario(u)) {
+            entityUsuario = toEntityUsuario(idSede, u);
             iRepositorioUsuario.save(entityUsuario);
             return true;
         }
@@ -32,20 +44,34 @@ public class ServicioUsuario implements IServicioUsuario, IUsuarioMapper {
 
     @Override
     public Usuario buscarUsuarioId(int idSede, int id) {
-        Optional<EntityUsuario> entityUsuario = iRepositorioUsuario.findById(id);
-        return toDtoUsuario(entityUsuario.get());
+        Integer sedeId = Integer.valueOf(idSede);
+        Optional<EntityUsuario> entityUsuario;
+        if (sedeId != null) {
+            entityUsuario = iRepositorioUsuario.findById(id);
+            if (entityUsuario.isPresent()) {
+                return toDtoUsuario(entityUsuario.get());
+            }
+        }
+        return null;
     }
 
     @Override
     public Usuario buscarUsuarioNombre (int idSede, String nombre) {
-        Optional<EntityUsuario> entityUsuario = iRepositorioUsuario.findByName(idSede, nombre);
-        return toDtoUsuario(entityUsuario.get());
+        Integer sedeId = Integer.valueOf(idSede);
+        Optional<EntityUsuario> entityUsuario;
+        if (sedeId != null && nombre != null && !nombre.trim().isEmpty()) {
+            entityUsuario = iRepositorioUsuario.findByName(idSede, nombre);
+            if (entityUsuario.isPresent()) {
+                return toDtoUsuario(entityUsuario.get());
+            }
+        }
+        return null;
     }
 
     @Override
     public boolean modificarUsuario (int idSede, Usuario u) {
-        EntityUsuario entityUsuario = toEntityUsuario(idSede, u);
-        if (entityUsuario != null) {
+        if (verificarValidezUsuario(u) && buscarUsuarioId(idSede, u.getId())!=null) {
+            EntityUsuario entityUsuario = toEntityUsuario(idSede, u);
             iRepositorioUsuario.save(entityUsuario);
             return true;
         }
@@ -54,9 +80,8 @@ public class ServicioUsuario implements IServicioUsuario, IUsuarioMapper {
 
     @Override
     public boolean eliminarUsuario(int idSede, int id) {
-        EntityUsuario entityUsuario = iRepositorioUsuario.findById(id).get();
-        if (entityUsuario != null) {
-            iRepositorioUsuario.delete(entityUsuario);
+        if (buscarUsuarioId(idSede, id) != null) {
+            iRepositorioUsuario.deleteById(id);
             return true;
         }
         return false;

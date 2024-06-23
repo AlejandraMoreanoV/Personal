@@ -51,9 +51,9 @@ public class ControladorUsuario {
     @DeleteMapping (path = "/{idSede}/{id}")
     public ResponseEntity<String> eliminarUsuario (@PathVariable int idSede, @PathVariable int id) {
         if (iServicioUsuario.eliminarUsuario(idSede, id)) {
-            return ResponseEntity.status(HttpStatus.OK).body("Usuario eliminada.");
+            return ResponseEntity.status(HttpStatus.OK).body("Usuario eliminado.");
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no eliminada.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no eliminado.");
     }
 
     @GetMapping (path = "/{idSede}")
